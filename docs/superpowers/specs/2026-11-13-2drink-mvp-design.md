@@ -173,6 +173,7 @@ Regras complementares:
 
 **Pontuação da liga**
 - Os pontos da pessoa numa liga são a soma dos lançamentos do extrato dela (bebidas, badges, bônus de hidratação e estornos) feitos **depois de entrar na liga** e **dentro do período da liga**.
+- **Estornos seguem o lançamento original:** um estorno só conta numa liga se o lançamento que ele estorna também contou nela, isto é, se o original foi feito dentro da janela daquela pessoa naquela liga. Exemplo: o bônus de hidratação foi ganho antes de a pessoa entrar na liga e desfeito depois; o estorno não desconta nada nessa liga (decisão do dono do produto, 2026-11-13).
 - O mesmo check-in pontua em **todas** as ligas ativas da pessoa.
 
 **Troféu Dourado**
