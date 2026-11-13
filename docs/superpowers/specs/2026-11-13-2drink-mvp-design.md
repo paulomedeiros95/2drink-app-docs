@@ -1,7 +1,7 @@
 # 2DRINK — Design do MVP (Carnaval 2027)
 
 **Data:** 2026-11-13
-**Status:** rascunho para aprovação
+**Status:** aprovado em 2026-11-13 (revisado na mesma data)
 **Repositórios:** `2drink-app-docs` (este, fonte da verdade), `2drink-api` (API + painel admin), `2drink-mobile` (app)
 
 Convenção deste documento: itens marcados **[decisão do Claude]** foram propostos durante o brainstorm e aceitos pelo dono do produto, ou são escolhas técnicas deixadas ao construtor. Todo o resto foi definido pelo dono do produto.
@@ -112,8 +112,8 @@ Clima do app: **amigável, fácil, simples e divertido**. Competição entre ami
 - **Localização falsa:** no Android, a API rejeita posições marcadas pelo sistema como simuladas ("mock"). No iOS não existe sinal equivalente confiável, então vale o código de honra. Ninguém consegue bloquear 100%.
 - **Pontuação do check-in:**
   - **cada bebida pontua**, em toda visita (tabela abaixo);
-  - na **primeira visita da temporada** (ou quando o tier do bar subiu), o check-in também **desbloqueia o badge** e soma os pontos dele (5.6);
-  - numa visita seguinte com o mesmo tier, não há badge novo, só os pontos das bebidas.
+  - na **primeira visita da temporada**, ou quando o tier atual do bar é maior que o maior badge que a pessoa já tem dele nesta temporada, o check-in também **desbloqueia o badge** e soma os pontos dele (5.6);
+  - nas outras visitas não há badge novo, só os pontos das bebidas.
 - **Lançamentos no extrato:** um "check-in" com 0 ponto (guarda foto e local), lançamentos "bebida" com os pontos de cada bebida e, se for o caso, um lançamento "badge" **[decisão do Claude]**.
 - **Intervalos:**
   - **Mesmo bar:** 15h desde o último check-in da pessoa naquele bar.
@@ -139,8 +139,9 @@ O dono do produto definiu 1,5 para água; estender a suco, refrigerante e whey f
 
 ### 5.5 Meta de hidratação
 - **Meta por check-in:** pelo menos 1 água para cada 2 bebidas alcoólicas, arredondando para cima, e no mínimo 1 água. Em fórmula: `águas ≥ max(1, ⌈alcoólicas / 2⌉)` **[decisão do Claude]**.
-- Quem bate a meta ganha o selo **"Hidratado 💧"** no post e **+2 pontos bônus**. O bônus é lançado no extrato quando o check-in deixa de aceitar complementos.
-- Só **água** conta para a meta. Suco e whey pontuam 1,5, mas não contam **[decisão do Claude]**.
+- Quem bate a meta ganha o selo **"Hidratado 💧"** no post e **+2 pontos bônus**.
+- **O bônus entra no extrato na hora em que a meta é batida** (no check-in ou num complemento). Se um complemento posterior desfizer a meta (mais bebidas alcoólicas sem água), entra um estorno de −2; se ela for batida de novo, entra outro +2. Assim o ranking está sempre certo no momento em que a liga termina **[decisão do Claude, corrigida na revisão: antes o bônus só entrava 12h depois, o que podia mudar o ranking depois do troféu entregue]**.
+- Só **água** conta para a meta. Suco, refrigerante e whey pontuam 1,5, mas não contam **[decisão do Claude]**.
 
 ### 5.6 Badges
 Os badges são **por pessoa, por bar e por temporada**. Ao fazer check-in num bar, a pessoa ganha o badge do tier atual (e os pontos dele) quando:
@@ -165,8 +166,9 @@ Regras complementares:
   - só o **criador** gera links de convite;
   - cada link vale para **uma pessoa** (uso único);
   - o link expira [decisão do Claude: 7 dias].
-- **Limite de ligas por pessoa: 2 ligas ativas** no MVP, configurável no painel (a versão paga futura terá 10). Criar uma liga ocupa uma vaga. Ligas encerradas não ocupam vaga. Quem já está em 2 ligas precisa sair de uma antes de aceitar um convite.
+- **Limite de ligas por pessoa: 2 ligas** no MVP, configurável no painel (a versão paga futura terá 10). Contam as ligas **ativas e as que ainda vão começar**; ligas encerradas não ocupam vaga. Criar uma liga ocupa uma vaga. Quem já está em 2 ligas precisa sair de uma antes de aceitar um convite.
 - **Sair de uma liga é definitivo naquela liga**: a pessoa não pode voltar a ela [decisão do Claude].
+- **O criador não pode sair da própria liga enquanto ela não terminar**, porque só ele gera convites [decisão do Claude].
 - **Renovar:** quando a liga termina, o criador pode abrir uma nova liga com os mesmos membros e novas datas, sem novos convites [decisão do Claude]. Cada membro precisa ter vaga livre.
 
 **Pontuação da liga**
@@ -240,6 +242,7 @@ Regras complementares:
 
 ### 5.10 Exclusão de conta (LGPD)
 - Apaga os dados pessoais, as fotos (selfies e foto de perfil) e os comentários.
+- A pessoa sai das ligas ativas e deixa de aparecer nos rankings delas.
 - Os lançamentos do extrato ficam **anônimos**: o vínculo com a pessoa é trocado por um identificador sem dados pessoais. Assim a cadeia do extrato não quebra e os rankings já encerrados ficam consistentes.
 - O campo "assinatura" do extrato (5.11) **não pode incluir dados pessoais**, para a anonimização não invalidar a cadeia.
 

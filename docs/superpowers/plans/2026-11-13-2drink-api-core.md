@@ -47,7 +47,7 @@ O plano 3 começa assim que as Tasks 1–10 deste plano estiverem prontas, em pa
 - Intervalos de check-in: 15h no mesmo bar; 1h em qualquer bar.
 - Bebidas por check-in: no mínimo 1 e no máximo 15, somando os complementos.
 - Os complementos são aceitos até 12h depois do check-in ou até o próximo check-in da pessoa, o que vier primeiro.
-- Meta de hidratação: `águas ≥ max(1, ⌈alcoólicas/2⌉)`, contando só `Water`. Vale +2 pontos, lançados quando o check-in fecha.
+- Meta de hidratação: `águas ≥ max(1, ⌈alcoólicas/2⌉)`, contando só `Water`. Vale +2 pontos, lançados **na hora em que a meta é batida** (confirmação ou complemento); se um complemento desfizer a meta, entra estorno de −2.
 
 **Ligas**
 - Limite de 2 ligas ativas ou futuras por pessoa (configurável). Ligas encerradas não contam.
@@ -58,6 +58,7 @@ O plano 3 começa assim que as Tasks 1–10 deste plano estiverem prontas, em pa
 **Contas e segurança**
 - Idade mínima: 18 anos, calculada na data de hoje em `America/Sao_Paulo`.
 - Todos os limites ficam em `RulesOptions` (seção `Rules` do `appsettings.json`), nunca espalhados no código. O painel do plano 4 passa a editá-los.
+- O endereço base dos links de convite vem da configuração `Invites:BaseUrl` (provisório: `https://2drink.app`), nunca fixo no código.
 - Erros de regra retornam `ProblemDetails` (HTTP 422 ou 409) com a extensão `code` em snake_case (ex.: `out_of_range`). O app traduz pelo `code`, porque o app é PT/EN.
 - A chave do Google e as connection strings ficam fora do repo: user-secrets em dev, Key Vault em produção.
 
@@ -110,17 +111,16 @@ O plano 3 começa assim que as Tasks 1–10 deste plano estiverem prontas, em pa
 
 Este passo não tem código. É o caminho crítico do prazo, por isso vem primeiro.
 
+- [x] **Máquina de desenvolvimento:** .NET SDK 10.0.404 e Docker 29.9.3 instalados e verificados em 2026-11-13.
+- [x] **Git:** identidade configurada; remotos no GitHub (`paulomedeiros95/2drink-app-docs`, `2drink-api`, `2drink-mobile`).
 - [ ] **Apple Developer:** conta pessoa física (US$ 99/ano) em developer.apple.com/programs/enroll.
 - [ ] **Google Play Console:** conta pessoal (US$ 25). Começar já a recrutar **12 ou mais testadores** com conta Google, para o teste fechado de 14 dias que precisa começar até meados de dezembro.
 - [ ] **Azure:** criar a assinatura.
 - [ ] **Google Cloud:** criar o projeto, ativar a **Places API (New)**, gerar a chave restrita a essa API e configurar um alerta de orçamento.
 - [ ] **Login com Google:** criar os OAuth Client IDs (iOS, Android e Web) no Google Cloud.
 - [ ] **Login com Apple:** criar o Service ID no Apple Developer.
-- [ ] **Máquina de desenvolvimento:**
-  - instalar o .NET 10 SDK (`winget install Microsoft.DotNet.SDK.10`);
-  - instalar o Docker Desktop (usado pelo Testcontainers);
-  - verificar com `dotnet --list-sdks` (deve listar `10.*`) e `docker info` (deve rodar sem erro).
-- [ ] **Git:** `git config --global user.name` e `user.email`.
+
+Nenhum item pendente desta task bloqueia as Tasks 1 a 13: elas usam fakes para Google, Apple e Places. As chaves reais só entram quando a API for publicada.
 
 ---
 
@@ -129,17 +129,20 @@ Este passo não tem código. É o caminho crítico do prazo, por isso vem primei
 **Files:**
 - Create: `TwoDrink.sln`, os 3 projetos de `src/` e os 2 de `tests/`, `CLAUDE.md`, `.gitmodules` (submodule `docs` → repo `2drink-app-docs`)
 - Create: `src/TwoDrink.Api/Program.cs`, `src/TwoDrink.Api/Features/Health/HealthEndpoints.cs`
+- Create: `src/TwoDrink.Infrastructure/Data/AppDbContext.cs` (ainda sem entidades) e a migration inicial vazia
 - Create: `tests/TwoDrink.Api.Tests/Infrastructure/ApiFactory.cs`
 - Test: `tests/TwoDrink.Api.Tests/HealthTests.cs`
 
 **Interfaces:**
 - Produces:
-  - `ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime`, que sobe um PostgreSQL via Testcontainers e expõe `FakeTimeProvider Clock` (inicial: `2027-02-06T20:00:00-03:00`), `HttpClient CreateClient()` e `AppDbContext NewDb()`.
+  - `AppDbContext : DbContext` (Npgsql, nomes em snake_case). As tasks seguintes adicionam `DbSet`s e migrations.
+  - `ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime`, que sobe um PostgreSQL via Testcontainers, aplica as migrations como dono do banco, e expõe `FakeTimeProvider Clock` (inicial: `2027-02-06T20:00:00-03:00`), `HttpClient CreateClient()` e `AppDbContext NewDb()`.
+  - `GET /health`: 200 quando o banco responde; 503 quando não responde.
   - `public partial class Program`.
   - O rate limiter global particionado por usuário (ou IP, se anônimo): 120 requisições por minuto.
 
 - [ ] **Step 1:** Criar a solution e os projetos (`dotnet new sln`; `classlib` para Domain e Infrastructure; `web` para Api; `xunit` para os testes). Configurar as referências: Api → Infrastructure → Domain.
-- [ ] **Step 2:** Adicionar o submodule: `git submodule add <url do 2drink-app-docs> docs`. Escrever o `CLAUDE.md`: o produto é o 2DRINK; a spec está em `docs/docs/superpowers/specs/2026-11-13-2drink-mvp-design.md` e os planos em `docs/docs/superpowers/plans/`; as regras de negócio vivem em `TwoDrink.Domain`; os erros usam o `code` de `ProblemDetails`.
+- [ ] **Step 2:** Adicionar o submodule: `git submodule add https://github.com/paulomedeiros95/2drink-app-docs.git docs`. Antes disso, o repo de docs precisa estar com os commits enviados ao GitHub (`git push` no `2drink-app-docs`). Escrever o `CLAUDE.md`: o produto é o 2DRINK; a spec está em `docs/docs/superpowers/specs/2026-11-13-2drink-mvp-design.md` e os planos em `docs/docs/superpowers/plans/`; as regras de negócio vivem em `TwoDrink.Domain`; os erros usam o `code` de `ProblemDetails`.
 - [ ] **Step 3:** Escrever o teste que falha:
 
 ```csharp
@@ -150,7 +153,7 @@ Este passo não tem código. É o caminho crítico do prazo, por isso vem primei
 ```
 
 - [ ] **Step 4:** Rodar `dotnet test --filter Health_returns_ok`. Esperado: FAIL (404 ou falha de compilação).
-- [ ] **Step 5:** Implementar `MapHealthEndpoints()`, o rate limiter e o `ProblemDetails`. Montar o `ApiFactory`: o container `postgres:17`, a migration aplicada no `InitializeAsync` e o `TimeProvider` substituído pelo `FakeTimeProvider`.
+- [ ] **Step 5:** Implementar `MapHealthEndpoints()` (com `AddDbContextCheck<AppDbContext>`), o rate limiter e o `ProblemDetails`. Montar o `ApiFactory`: o container `postgres:17`, as migrations aplicadas no `InitializeAsync` e o `TimeProvider` substituído pelo `FakeTimeProvider`.
 - [ ] **Step 6:** Rodar `dotnet test`. Esperado: PASS.
 - [ ] **Step 7:** Commit: `chore: scaffold solution, docs submodule and health check`.
 
@@ -324,7 +327,8 @@ Geofence G => new(new RulesOptions());
 ### Task 5: Extrato imutável (ledger)
 
 **Files:**
-- Create: `src/TwoDrink.Infrastructure/Data/AppDbContext.cs`, `Data/Entities/LedgerAccount.cs`, `Data/Entities/LedgerEntry.cs`
+- Create: `Data/Entities/LedgerAccount.cs`, `Data/Entities/LedgerEntry.cs`
+- Modify: `src/TwoDrink.Infrastructure/Data/AppDbContext.cs` (Task 1)
 - Create: `src/TwoDrink.Infrastructure/Ledger/LedgerWriter.cs`, `LedgerHasher.cs`, `LedgerVerifier.cs`
 - Create: a migration `InitialLedger`, com SQL bruto para a trigger e para as permissões
 - Test: `tests/TwoDrink.Api.Tests/LedgerTests.cs`
@@ -362,7 +366,7 @@ Geofence G => new(new RulesOptions());
         db.Database.ExecuteSqlRawAsync($"UPDATE ledger_entries SET points = 50 WHERE id = {e.Id}"));
     Assert.Equal("P0001", ex.SqlState);
 }
-[Fact] public async Task Delete_is_rejected_for_app_role() { /* conectar como twodrink_app; DELETE → SqlState 42501 */ }
+[Fact] public async Task Delete_is_rejected_for_app_role() { /* conexão da API (usuário membro de twodrink_app); DELETE → SqlState 42501 */ }
 [Fact] public async Task Verifier_detects_tampering() {
     // Desliga a trigger como superusuário, altera points e religa.
     // FindBrokenChainsAsync deve retornar a conta adulterada.
@@ -380,9 +384,12 @@ Geofence G => new(new RulesOptions());
 - [ ] **Step 3:** Implementar. A migration tem:
   - um índice único `(account_id, sequence)`;
   - uma trigger `BEFORE UPDATE OR DELETE` que faz `RAISE EXCEPTION 'ledger is append-only'`;
-  - a criação do papel `twodrink_app` com `GRANT SELECT, INSERT` em `ledger_entries` e `REVOKE UPDATE, DELETE`.
+  - a criação do papel `twodrink_app` (`NOLOGIN`, se ainda não existir), com:
+    - `GRANT SELECT, INSERT` em `ledger_entries` e `REVOKE UPDATE, DELETE, TRUNCATE`;
+    - `SELECT, INSERT, UPDATE, DELETE` nas demais tabelas, via `ALTER DEFAULT PRIVILEGES` (as tabelas das tasks seguintes herdam);
+    - `USAGE` nas sequences.
 
-  Em produção, a API conecta como `twodrink_app`, e as migrations rodam com o dono do banco. O `ApiFactory` usa a mesma separação.
+  A API nunca conecta como dono do banco. Ela usa um usuário com login que é membro de `twodrink_app`. No `ApiFactory`, esse usuário (`twodrink_api`) é criado depois das migrations, e a connection string da API aponta para ele. Em produção, o mesmo usuário é criado pelo script de provisionamento do plano de publicação.
 
   Registrar também um `BackgroundService` diário que chama `FindBrokenChainsAsync` e, se houver contas na lista, registra um log `Critical` com elas. O alerta no Azure é ligado a esse log.
 - [ ] **Step 4:** Rodar os testes. Esperado: PASS.
@@ -451,7 +458,7 @@ Geofence G => new(new RulesOptions());
 **Files:**
 - Create: `src/TwoDrink.Infrastructure/Places/IPlacesClient.cs`, `GooglePlacesClient.cs`
 - Create: `Data/Entities/Venue.cs`, `VenueSponsorship.cs`, `Season.cs`, uma migration (com seed das temporadas)
-- Create: `src/TwoDrink.Api/Features/Venues/VenueEndpoints.cs`, `Features/Venues/VenueTierService.cs`, `Features/Seasons/SeasonService.cs`
+- Create: `src/TwoDrink.Api/Features/Venues/VenueEndpoints.cs`, `Features/Venues/VenueService.cs`, `Features/Venues/VenueTierService.cs`, `Features/Seasons/SeasonService.cs`
 - Test: `tests/TwoDrink.Api.Tests/VenueTests.cs`, `tests/TwoDrink.Api.Tests/GooglePlacesClientTests.cs`
 
 **Interfaces:**
@@ -463,7 +470,7 @@ Geofence G => new(new RulesOptions());
   - `Venue`: `Guid Id`, `string PlaceId` (único), `string Name`, `string? Address`, `double Lat`, `double Lng`, `DateTimeOffset CachedAt`.
   - `VenueSponsorship`: `Guid Id`, `Guid VenueId`, `Tier Tier`, `string? BadgeArtUrl`, `DateTimeOffset StartsAt`, `DateTimeOffset EndsAt`, `string CreatedBy`.
   - `VenueTierService`: `Task<(Tier Tier, string? ArtUrl)> CurrentAsync(Guid venueId, DateTimeOffset at, CancellationToken ct)`. Sem patrocínio vigente, devolve `(Tier.Default, null)`; `null` significa a arte padrão.
-  - `Venue` tem ainda `Task<Venue> EnsureFreshAsync(Venue v, CancellationToken ct)`: se `CachedAt` tem mais de 30 dias, chama `DetailsAsync` e atualiza.
+  - `VenueService` (em `Features/Venues/VenueService.cs`): `Task<Venue> EnsureFreshAsync(Venue v, CancellationToken ct)`. Se `CachedAt` tem mais de 30 dias, chama `DetailsAsync` e atualiza.
   - `Season`: `Guid Id`, `string Name`, `DateOnly StartDate`, `DateOnly EndDate`.
   - `SeasonService`:
     - `Task<Season?> AtAsync(DateTimeOffset at, CancellationToken ct)`;
@@ -511,7 +518,7 @@ Geofence G => new(new RulesOptions());
 - Test: `tests/TwoDrink.Api.Tests/CheckInIntentTests.cs`
 
 **Interfaces:**
-- Consumes: `Geofence`, `CheckInCooldown` (Task 4); `Venue`, `EnsureFreshAsync` (Task 7).
+- Consumes: `Geofence`, `CheckInCooldown` (Task 4); `Venue`, `VenueService.EnsureFreshAsync` (Task 7).
 - Produces:
   - `interface IPhotoStorage`:
     - `Uri CreateUploadUrl(string blobName, TimeSpan ttl)`: SAS só de escrita, container privado `selfies`;
@@ -575,12 +582,12 @@ Geofence G => new(new RulesOptions());
     O fechamento do check-in anterior entra na Task 10.
   - Se não existe temporada vigente: não dá badge, mas as bebidas pontuam.
 
-- [ ] **Step 1:** Escrever os testes que falham:
+- [ ] **Step 1:** Escrever os testes que falham. Os testes desta task usam só cerveja, porque o bônus de hidratação entra na Task 10 e mudaria os totais. O helper `Sponsor(bar, tier)` cria um patrocínio que começa agora e dura 365 dias; `EndSponsorship(bar)` encerra o vigente agora.
 
 ```csharp
 [Fact] public async Task First_visit_scores_drinks_plus_default_badge() {
-    var r = await Confirm(InsideBar, (DrinkType.Water, 5));
-    Assert.Equal(7.5m + 1m, r.PointsAwarded);
+    var r = await Confirm(InsideBar, (DrinkType.Beer, 5));
+    Assert.Equal(5m + 1m, r.PointsAwarded);
     Assert.Equal(Tier.Default, r.Badge!.Tier);
 }
 [Fact] public async Task Second_visit_same_tier_scores_only_drinks() {
@@ -628,19 +635,21 @@ Geofence G => new(new RulesOptions());
 ### Task 10: Complementos, fechamento do check-in e bônus de hidratação
 
 **Files:**
-- Create: `src/TwoDrink.Api/Jobs/CheckInCloser.cs` (serviço e `BackgroundService` a cada 5 min), `Features/CheckIns/ComplementEndpoints.cs`, `Features/Me/LedgerEndpoints.cs`
-- Modify: `src/TwoDrink.Api/Features/CheckIns/CheckInService.cs`. Antes de gravar os lançamentos, `ConfirmAsync` chama `CheckInCloser.CloseAsync` no check-in aberto anterior do usuário, dentro da mesma transação.
+- Create: `src/TwoDrink.Api/Features/CheckIns/HydrationReconciler.cs`, `Jobs/CheckInCloser.cs` (serviço e `BackgroundService` a cada 5 min), `Features/CheckIns/ComplementEndpoints.cs`, `Features/Me/LedgerEndpoints.cs`
+- Modify: `src/TwoDrink.Api/Features/CheckIns/CheckInService.cs`. Na mesma transação, `ConfirmAsync` passa a: (1) antes dos lançamentos, chamar `CheckInCloser.CloseAsync` no check-in aberto anterior do usuário; (2) depois deles, chamar `HydrationReconciler.ReconcileAsync`.
 - Test: `tests/TwoDrink.Api.Tests/CheckInComplementTests.cs`
 
 **Interfaces:**
 - Consumes: `CheckIn`, `CheckInService` (Task 9); `HydrationGoal` (Task 2); `LedgerWriter` (Task 5).
 - Produces:
-  - `POST /checkins/{id}/drinks` com `{ lat, lng, accuracyM, isMocked, drinks }`. Devolve `{ pointsAwarded, drinkCount }`.
-  - `CheckInCloser.CloseAsync(Guid checkInId, CancellationToken ct)`:
-    - define `ClosedAt`;
-    - calcula `HydrationGoal` sobre todos os `Drink` daquele check-in;
-    - se a meta foi batida, grava `HydrationBonus` (+2) e marca `HydrationMet`;
-    - é idempotente.
+  - `POST /checkins/{id}/drinks` com `{ lat, lng, accuracyM, isMocked, drinks }`. Devolve `{ pointsAwarded, drinkCount }`. O `pointsAwarded` inclui o +2 ou −2 da hidratação, se houver.
+  - `HydrationReconciler.ReconcileAsync(CheckIn c, CancellationToken ct)`, chamado na confirmação e em cada complemento, dentro da transação:
+    - calcula `HydrationGoal.IsMet` sobre todos os `Drink` daquele check-in;
+    - `saldo` = soma dos lançamentos `HydrationBonus` e dos estornos deles para aquele check-in;
+    - se a meta foi batida e `saldo == 0`, grava `HydrationBonus` (+2);
+    - se a meta não foi batida e `saldo > 0`, grava `Reversal` (−2, `Reason = "hydration_goal_lost"`, referenciando o último bônus);
+    - atualiza `CheckIn.HydrationMet`.
+  - `CheckInCloser.CloseAsync(Guid checkInId, CancellationToken ct)`: só define `ClosedAt`. Não lança pontos. É idempotente.
   - `CheckInCloser.SweepAsync(CancellationToken ct)`: fecha os check-ins com `ComplementsUntil ≤ now` e `ClosedAt == null`.
   - `GET /me/ledger?before=&limit=`: o extrato da própria conta, só leitura, do mais novo para o mais antigo.
 
@@ -660,18 +669,31 @@ Geofence G => new(new RulesOptions());
 [Fact] public async Task Complement_cannot_exceed_15_total() { /* 14 + 2 → drink_limit */ }
 [Fact] public async Task Complement_after_12h_rejected() { /* checkin_closed */ }
 [Fact] public async Task New_checkin_elsewhere_closes_previous() { /* complemento no anterior → checkin_closed */ }
-[Fact] public async Task Hydration_bonus_on_close_when_goal_met() {
-    var c = await Confirm(InsideBar, (DrinkType.Beer, 2)); await Complement(c, InsideBar, (DrinkType.Water, 1));
-    Clock.Advance(TimeSpan.FromHours(12)); await Sweep();
-    Assert.Equal(2m + 1.5m + 1m + 2m, await LedgerTotal(Me));
+[Fact] public async Task Water_only_checkin_gets_bonus_immediately() {
+    var r = await Confirm(InsideBar, (DrinkType.Water, 5));
+    Assert.Equal(7.5m + 1m + 2m, r.PointsAwarded); // 5 águas + badge Default + hidratação
 }
-[Fact] public async Task No_hydration_bonus_when_goal_missed() { }
-[Fact] public async Task Close_is_idempotent() { /* SweepAsync duas vezes → um bônus só */ }
+[Fact] public async Task Complement_that_meets_goal_gives_bonus_immediately() {
+    var c = await Confirm(InsideBar, (DrinkType.Beer, 2));
+    var r = await Complement(c, InsideBar, (DrinkType.Water, 1));
+    Assert.Equal(1.5m + 2m, r.PointsAwarded);
+    Assert.Equal(2m + 1m + 1.5m + 2m, await LedgerTotal(Me));
+}
+[Fact] public async Task Complement_that_breaks_goal_reverses_bonus_and_meeting_again_restores_it() {
+    var c = await Confirm(InsideBar, (DrinkType.Beer, 2), (DrinkType.Water, 1)); // meta batida: +2
+    await Complement(c, InsideBar, (DrinkType.Beer, 2));                         // 4 cervejas, 1 água: −2
+    Assert.Equal(4m + 1.5m + 1m, await LedgerTotal(Me));
+    await Complement(c, InsideBar, (DrinkType.Water, 1));                        // 2 águas: +2 de novo
+    Assert.Equal(4m + 3m + 1m + 2m, await LedgerTotal(Me));
+}
+[Fact] public async Task No_hydration_bonus_when_goal_missed() { /* 3 cervejas e nenhuma água → nenhum lançamento HydrationBonus */ }
+[Fact] public async Task Sweep_closes_without_changing_points() { /* Advance(12h); SweepAsync duas vezes → ClosedAt definido, total inalterado */ }
 [Fact] public async Task Complement_for_someone_elses_checkin_is_404() { }
 ```
 
 - [ ] **Step 2:** Rodar os testes. Esperado: FAIL.
-- [ ] **Step 3:** Implementar. Complemento e fechamento travam a linha do `CheckIn` com `FOR UPDATE`, o que garante o limite de 15 sob concorrência.
+- [ ] **Step 3:** Implementar. Complemento e fechamento travam a linha do `CheckIn` com `FOR UPDATE`, o que garante o limite de 15 e o saldo de hidratação corretos sob concorrência.
+- [ ] **Step 3b:** Rodar de novo os testes da Task 9 (`dotnet test --filter CheckInConfirmTests`). Eles usam só cerveja, então continuam verdes.
 - [ ] **Step 4:** Rodar os testes. Esperado: PASS.
 - [ ] **Step 5:** Commit: `feat(checkins): complements, closing and hydration bonus`.
 
@@ -695,7 +717,7 @@ Geofence G => new(new RulesOptions());
   - Uma liga ocupa vaga enquanto `agora < fim+1 00:00` (fuso de São Paulo) e `LeftAt == null`.
   - Endpoints:
     - `POST /leagues` com `{ name, description, startDate, endDate }`. Valida que as datas cabem numa temporada (`dates_outside_season`), que `start ≤ end`, que `end ≥ hoje`, e a vaga (`league_limit`). O criador entra como membro.
-    - `POST /leagues/{id}/invites`: só o criador (senão 403). Devolve `{ token, url: "https://2drink.app/i/{token}", expiresAt }`. O token tem 32 bytes aleatórios em base64url; o banco guarda só o hash.
+    - `POST /leagues/{id}/invites`: só o criador (senão 403). Devolve `{ token, url: "{Invites:BaseUrl}/i/{token}", expiresAt }`. O token tem 32 bytes aleatórios em base64url; o banco guarda só o hash.
     - `POST /invites/{token}/accept`. Valida o convite (`invite_invalid`, `invite_expired`, `invite_used`), a liga (`league_ended`), a saída anterior (`left_league`), se já é membro (`already_member`) e a vaga (`league_limit`).
     - `POST /leagues/{id}/leave`: o criador não sai de liga ativa (`creator_cannot_leave`).
     - `GET /me/leagues`: devolve `[{ id, name, startDate, endDate, status: upcoming|active|ended, memberCount }]`.
