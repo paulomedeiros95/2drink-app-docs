@@ -242,6 +242,10 @@ public void Tier_points(Tier t, decimal p) => Assert.Equal(p, TierPoints.Of(t));
 [Fact] public void Same_tier_does_not_grant() => Assert.False(BadgeEligibility.ShouldGrant(Tier.Bronze, Tier.Bronze));
 [Fact] public void Upgrade_grants_evolution() => Assert.True(BadgeEligibility.ShouldGrant(Tier.Ouro, Tier.Bronze));
 [Fact] public void Downgrade_does_not_grant() => Assert.False(BadgeEligibility.ShouldGrant(Tier.Bronze, Tier.Epic));
+[Fact] public void Renewal_in_same_season_with_lower_or_equal_tier_does_not_grant() {
+    Assert.False(BadgeEligibility.ShouldGrant(Tier.Ouro, Tier.Epic));
+    Assert.False(BadgeEligibility.ShouldGrant(Tier.Epic, Tier.Epic));
+}
 ```
 
 - [ ] **Step 2:** Rodar os testes. Esperado: FAIL.
@@ -589,6 +593,13 @@ Geofence G => new(new RulesOptions());
     await Sponsor(Bar, Tier.Epic); Clock.Advance(TimeSpan.FromHours(16));
     var r = await Confirm(InsideBar, (DrinkType.Beer, 1));
     Assert.Equal(51m, r.PointsAwarded);
+}
+[Fact] public async Task Renewal_in_same_season_gives_no_new_badge_but_next_season_does() {
+    await Sponsor(Bar, Tier.Epic); await Confirm(InsideBar, (DrinkType.Beer, 1));          // +50 +1
+    await EndSponsorship(Bar); await Sponsor(Bar, Tier.Ouro); Clock.Advance(TimeSpan.FromHours(16));
+    Assert.Null((await Confirm(InsideBar, (DrinkType.Beer, 1))).Badge);                  // mesma temporada
+    Clock.SetUtcNow(DateTimeOffset.Parse("2027-07-02T20:00:00Z")); await SeedSeason("2027 – 2º semestre", new(2027,7,1), new(2027,12,31));
+    Assert.Equal(Tier.Ouro, (await Confirm(InsideBar, (DrinkType.Beer, 1))).Badge!.Tier); // temporada nova reinicia
 }
 [Fact] public async Task Badge_points_are_frozen_when_tier_later_drops() {
     await Sponsor(Bar, Tier.Epic); await Confirm(InsideBar, (DrinkType.Beer, 1));

@@ -151,7 +151,8 @@ Regras complementares:
 - **Tier que caiu não dá badge** [decisão do Claude].
 - **Histórico protegido:** os pontos do badge são fixados no momento do check-in. Mudanças legítimas de tier depois disso não alteram nada.
 - Cada pessoa acumula uma **lista de badges por bar** (por exemplo, Bronze e depois Ouro).
-- Na temporada seguinte, a primeira visita volta a valer badge. Os badges antigos ficam na galeria pessoal.
+- **Dentro da mesma temporada, renovação não dá badge repetido nem menor.** Exemplo: o Higor ganhou Epic; o patrocínio acabou e depois o bar contratou Ouro (ou Epic de novo) na mesma temporada. O Higor não ganha nada novo ali, só os pontos das bebidas. Quem ainda não tinha badge daquele nível ganha normalmente.
+- **Sala de Honra:** quando a temporada acaba, todos os badges dela vão para a "Sala de Honra" da pessoa, uma sala de troféus de badges, separada por temporada. Na temporada seguinte tudo reinicia, e a primeira visita a cada bar volta a valer badge.
 - Cada badge guarda a arte vigente no momento da conquista [decisão do Claude].
 
 ### 5.7 Temporadas e ligas
@@ -221,7 +222,7 @@ Regras complementares:
 - **Ligas:** lista das ligas da pessoa. Dentro de cada liga: capa, ranking (pontos e lugares visitados), datas e tempo restante, membros, e convites (só para o criador).
 - **Perfil e galeria:**
   - badges da temporada atual;
-  - badges das temporadas anteriores;
+  - **Sala de Honra**: os badges das temporadas anteriores, separados por temporada;
   - Troféus Dourados;
   - o próprio extrato de lançamentos, só para leitura.
 - **Fitness (em breve):** ícone chamativo. Ao tocar, abre uma tela "Em breve" com um texto curto sobre calorias e treinos. Cada toque é registrado como evento para medir o interesse. Não tem nenhuma funcionalidade.
